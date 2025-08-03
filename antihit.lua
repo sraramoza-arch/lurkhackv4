@@ -6,7 +6,7 @@ local humanoid = character:WaitForChild("Humanoid")
 -- Flaga trybu anty-hit
 local antiHitActive = false
 
--- Stworzenie prostego GUI z przyciskiem
+-- Stworzenie GUI z przyciskiem
 local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 ScreenGui.Name = "AntiHitGui"
 
@@ -25,7 +25,7 @@ local function activateAntiHit()
     antiHitActive = true
     button.Text = "Anty-hit: WŁ."
     
-    -- Zmniejsz rozmiar i zmień wygląd na bloczek
+    -- Zamiana w bloczek
     for _, part in pairs(character:GetChildren()) do
         if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
             part.Transparency = 0.2
@@ -35,9 +35,9 @@ local function activateAntiHit()
         end
     end
     
-    humanoid.PlatformStand = true -- blokuje fizykę postaci
+    humanoid.PlatformStand = true -- blokuje fizykę
     
-    -- Anti hit - blokowanie obrażeń
+    -- Blokowanie obrażeń
     humanoid.HealthChanged:Connect(function(health)
         if antiHitActive and health < humanoid.MaxHealth then
             humanoid.Health = humanoid.MaxHealth
@@ -52,18 +52,18 @@ local function deactivateAntiHit()
     
     humanoid.PlatformStand = false
     
-    -- Przywróć normalny wygląd i rozmiar (można rozszerzyć)
+    -- Przywróć wygląd
     for _, part in pairs(character:GetChildren()) do
         if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
             part.Transparency = 0
-            part.Size = Vector3.new(2, 2, 1) -- dostosuj do modelu jeśli trzeba
+            part.Size = Vector3.new(2, 2, 1) -- dostosuj jeśli trzeba
             part.BrickColor = BrickColor.new("Medium stone grey")
             part.Material = Enum.Material.Plastic
         end
     end
 end
 
--- Kliknięcie w przycisk przełącza stan anty-hit
+-- Przełączanie trybu po kliknięciu
 button.MouseButton1Click:Connect(function()
     if antiHitActive then
         deactivateAntiHit()
