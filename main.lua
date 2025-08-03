@@ -13,12 +13,11 @@ local noclipConnection
 local basePosition = hrp.Position
 local isTeleporting = false
 
--- Create ScreenGui
+-- GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ChudyKingGUI"
 ScreenGui.Parent = game:GetService("CoreGui")
 
--- Main Frame
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 320, 0, 400)
 frame.Position = UDim2.new(0.5, -160, 0.5, -200)
@@ -27,7 +26,6 @@ frame.BackgroundTransparency = 0.7
 frame.BorderSizePixel = 0
 frame.Parent = ScreenGui
 
--- Title
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 40)
 title.BackgroundTransparency = 1
@@ -37,13 +35,11 @@ title.TextSize = 26
 title.Text = "Chudy King"
 title.Parent = frame
 
--- UIListLayout for buttons/sliders
 local layout = Instance.new("UIListLayout")
 layout.Padding = UDim.new(0, 10)
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Parent = frame
-
--- Helper: Create Button
+-- Helper: Button
 local function createButton(text, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -20, 0, 40)
@@ -52,15 +48,12 @@ local function createButton(text, callback)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 18
     btn.Text = text
-    btn.AnchorPoint = Vector2.new(0.5, 0)
-    btn.Position = UDim2.new(0.5, 0, 0, 0)
     btn.Parent = frame
     btn.AutoButtonColor = true
     btn.MouseButton1Click:Connect(callback)
-    return btn
 end
 
--- Helper: Create Slider (for touch)
+-- Helper: Slider
 local function createSlider(labelText, minVal, maxVal, defaultVal, callback)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -20, 0, 60)
@@ -81,8 +74,6 @@ local function createSlider(labelText, minVal, maxVal, defaultVal, callback)
     sliderBg.Position = UDim2.new(0, 0, 0, 30)
     sliderBg.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
     sliderBg.Parent = container
-    sliderBg.ClipsDescendants = true
-    sliderBg.AnchorPoint = Vector2.new(0, 0)
 
     local sliderFill = Instance.new("Frame")
     sliderFill.Size = UDim2.new((defaultVal - minVal) / (maxVal - minVal), 0, 1, 0)
@@ -105,27 +96,22 @@ local function createSlider(labelText, minVal, maxVal, defaultVal, callback)
 
     sliderBg.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
-            local relativePos = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
-            sliderFill.Size = UDim2.new(relativePos, 0, 1, 0)
-            local value = math.floor(minVal + (maxVal - minVal) * relativePos)
+            local rel = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+            sliderFill.Size = UDim2.new(rel, 0, 1, 0)
+            local value = math.floor(minVal + (maxVal - minVal) * rel)
             label.Text = labelText .. ": " .. value
             callback(value)
         end
     end)
-
-    return container
 end
-
 -- NoClip toggle
-local function toggleNoClip()
-    noClip = not noClip
+local function setNoClip(enabled)
+    noClip = enabled
     if noClip then
         noclipConnection = RunService.Stepped:Connect(function()
-            if character then
-                for _, part in pairs(character:GetChildren()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
-                    end
+            for _, part in pairs(character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
                 end
             end
         end)
@@ -134,89 +120,60 @@ local function toggleNoClip()
             noclipConnection:Disconnect()
             noclipConnection = nil
         end
-        if character then
-            for _, part in pairs(character:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
+        -- Restore collisions
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
             end
         end
     end
 end
 
-local speed = 16
-local jumpPower = 50
-
-local function setSpeed(value)
-    speed = value
-    if humanoid and humanoid.Parent then
-        humanoid.WalkSpeed = speed
-    end
-end
-
-local function setJump(value)
-    jumpPower = value
-    if humanoid and humanoid.Parent then
-        humanoid.JumpPower = jumpPower
-    end
-end
-
+-- Teleport do bazy (bez cofania)
 local function teleportToBase()
-    if isTeleporting or not hrp then return end
+    if isTeleporting then return end
     isTeleporting = true
-
-    -- Wyłącz kolizję by uniknąć cofnięcia
-    for _, part in pairs(character:GetChildren()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = false
-        end
-    end
-
-    -- Kilkukrotne ustawienie pozycji, aby wymusić teleport
-    for i = 1, 5 do
-        hrp.CFrame = CFrame.new(basePosition)
-        wait(0.1)
-    end
-
-    -- Mały delay by serwer zaakceptował pozycję
-    wait(1)
-
-    -- Włącz kolizję z powrotem
-    for _, part in pairs(character:GetChildren()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = true
-        end
-    end
-
+    hrp.CFrame = CFrame.new(basePosition + Vector3.new(0, 5, 0))
+    wait(0.5)
     isTeleporting = false
 end
 
--- Buttons
-createButton("Toggle NoClip", toggleNoClip)
-createButton("Teleport do bazy", teleportToBase)
+-- Inicjalizacja suwaków
+local currentSpeed = humanoid.WalkSpeed
+local currentJump = humanoid.JumpPower
 
--- Sliders
-createSlider("Speed", 16, 100, speed, setSpeed)
-createSlider("Jump Power", 50, 150, jumpPower, setJump)
-
--- Set initial values
-setSpeed(speed)
-setJump(jumpPower)
-
--- Update character refs on respawn
-player.CharacterAdded:Connect(function(char)
-    character = char
-    humanoid = character:WaitForChild("Humanoid")
-    hrp = character:WaitForChild("HumanoidRootPart")
-    basePosition = hrp.Position
-
-    setSpeed(speed)
-    setJump(jumpPower)
+createSlider("Speed", 8, 100, currentSpeed, function(val)
+    humanoid.WalkSpeed = val
 end)
 
--- Toggle GUI visibility with two-finger tap (mobile friendly)
-UserInputService.TouchTapInWorld:Connect(function(touches)
-    if #touches == 2 then
-        frame.Visible = not frame.Visible
+createSlider("JumpPower", 10, 150, currentJump, function(val)
+    humanoid.JumpPower = val
+end)
+
+-- Przycisk noClip
+createButton("Toggle NoClip", function()
+    setNoClip(not noClip)
+end)
+
+-- Przycisk teleport do bazy
+createButton("Teleport do bazy", function()
+    teleportToBase()
+end)
+
+-- Automatyczne ustawienie pozycji bazy przy starcie
+basePosition = hrp.Position
+
+-- Dwupalcowy gest ukrywający GUI (na telefon)
+local touchCount = 0
+UserInputService.TouchStarted:Connect(function()
+    touchCount = touchCount + 1
+    if touchCount == 2 then
+        ScreenGui.Enabled = not ScreenGui.Enabled
+        touchCount = 0
+    end
+end)
+UserInputService.TouchEnded:Connect(function()
+    if touchCount > 0 then
+        touchCount = touchCount - 1
     end
 end)
