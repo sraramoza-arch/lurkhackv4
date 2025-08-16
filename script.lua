@@ -46,17 +46,16 @@ btn.MouseButton1Click:Connect(function()
     if not (player.Character and player.Character:FindFirstChild("HumanoidRootPart")) then return end
     if myBase then
         local hrp = player.Character.HumanoidRootPart
-        local goal = {}
-        goal.CFrame = myBase.CFrame + Vector3.new(0,7,0)
+        local targetPos = myBase.Position -- tylko do bazy, nie nad nią
         local tweenInfo = TweenInfo.new(
             0.4, -- czas ruchu (0.4 sekundy = bardzo szybko)
             Enum.EasingStyle.Linear
         )
         local hum = player.Character:FindFirstChildOfClass("Humanoid")
         if hum then hum.WalkSpeed = 0 end
-        local tween = TweenService:Create(hrp, tweenInfo, goal)
+        local tween = TweenService:Create(hrp, tweenInfo, {Position = targetPos})
         tween:Play()
         tween.Completed:Wait()
         if hum then hum.WalkSpeed = 16 end
     end
-end)
+end) 
